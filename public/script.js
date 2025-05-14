@@ -1,3 +1,8 @@
+const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const wsUrl = wsProtocol + window.location.host;
+const ws = new WebSocket(wsUrl);
+
+
 // 1. DATA MODEL
 const conversations = {
   Francis: [],
@@ -77,14 +82,16 @@ function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
 
-  conversations[currentUser].push({
-    sender: 'You',
-    text,
-    timestamp: Date.now()
-  });
 
+  const msg = {
+    sender: sessionStorage.user || 'anonymous',
+    text,
+    time: new Date().toISOString
+  }
+
+  ws.send(JSON.stringify(msg))
   inputEl.value = '';
-  renderMessages();
+
 }
 
 // 7. EVENT LISTENERS
@@ -99,3 +106,37 @@ inputEl.addEventListener('keydown', e => {
 // 8. BOOTSTRAP
 renderUserList();
 renderMessages();
+
+/*
+const messageShape = {
+  "from": "zephan",
+  "msg": "this is a test message",
+  "at": (new Date()).toISOString()
+}
+*/
+
+
+
+  
+  ws.onopen = function() {
+    console.log('Connected to the WebSocket server');
+  };
+  
+  ws.onmessage = function(event) {
+    console.log('Received', event);
+
+    const msg = JSON.parse(event.data)
+
+    conversations[currentUser].push(msg);
+    renderMessages();
+  };
+  
+  ws.onclose = function() {
+    console.log('Disconnected from the WebSocket server');
+  };
+  
+  ws.onerror = function(error) {
+    console.error('WebSocket error:', error);
+  };
+
+  
